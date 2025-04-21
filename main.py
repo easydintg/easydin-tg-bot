@@ -11,7 +11,6 @@ CHATBASE_BOT_ID = os.environ.get("CHATBASE_BOT_ID")
 
 TELEGRAM_API_URL = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
 
-# === Webhook ===
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
@@ -27,15 +26,13 @@ def webhook():
                 "Authorization": f"Bearer {CHATBASE_API_KEY}",
                 "Content-Type": "application/json"
             },
-                    json={
-            "messages": [{"content": user_text, "role": "user"}],
-            "chatbot_id": CHATBASE_BOT_ID
-        }
-    )
+            json={
+                "messages": [{"content": user_text, "role": "user"}],
+                "chatbot_id": CHATBASE_BOT_ID
+            }
+        )
 
-    print(">>> Chatbase status:", chatbase_response.status_code)
-    print(">>> Chatbase raw response:", chatbase_response.text)
-    print("== Chatbase ответ ==")
+        print("== Chatbase ответ ==")
         print(chatbase_response.status_code)
         print(chatbase_response.text)
 
@@ -55,7 +52,6 @@ def webhook():
         )
 
     return 'ok', 200
-
 
 @app.route('/')
 def home():
