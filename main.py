@@ -4,19 +4,23 @@ import os
 
 app = Flask(__name__)
 
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}"
-CHATBASE_API_KEY = os.getenv('CHATBASE_API_KEY')
-CHATBASE_BOT_ID = os.getenv('CHATBASE_BOT_ID')
+# === Переменные окружения ===
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+CHATBASE_API_KEY = os.environ.get("CHATBASE_API_KEY")
+CHATBASE_BOT_ID = os.environ.get("CHATBASE_BOT_ID")
 
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
+# === Webhook обработка ===
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
+
     if 'message' in data:
         chat_id = data['message']['chat']['id']
         user_text = data['message'].get('text', '')
 
-        print(f"📨 Получено сообщение от Telegram: {user_text}")
+        print(f"\n>>> Получено сообщение от пользователя: {user_text}")
 
         # Отправка в Chatbase
         chatbase_response = requests.post(
@@ -27,37 +31,25 @@ def webhook():
             },
             json={
                 "messages": [{"content": user_text, "role": "user"}],
-                "chatbotId": CHATBASE_BOT_ID  # ВАЖНО: исправлено на "chatbotId"
+                "chatbotId": CHATBASE_BOT_ID
             }
         )
 
-        print("== Chatbase ответ ==")
-        print("Status code:", chatbase_response.status_code)
-        print("Raw text:", chatbase_response.text)
+        print(f">>> Ответ от Chatbase: {chatbase_response.status_code} - {chatbase_response.text}")
 
-        # Парсинг
         if chatbase_response.ok:
-            try:
-                chatbase_json = chatbase_response.json()
-                print("📦 JSON Chatbase:", chatbase_json)
-
-                if 'messages' in chatbase_json and len(chatbase_json['messages']) > 0:
-                    answer = chatbase_json['messages'][0].get('content', '❔ Пустой ответ от Chatbase')
-                else:
-                    print("❌ В ответе нет 'messages'")
-                    answer = "Ответ от Chatbase не содержит сообщений 😕"
-
-            except Exception as e:
-                print("⚠️ Ошибка парсинга JSON:", e)
-                print("📥 Сырой ответ:", chatbase_response.text)
-                answer = "Не удалось разобрать ответ 🤔"
+            data = chatbase_response.json()
+            if "messages" in data and data["messages"]:
+                answer = data["messages"][0]["content"]
+            else:
+                answer = "Извините, не удалось получить ответ от Chatbase 😕"
         else:
-            answer = "Извините, Chatbase вернул ошибку 😥"
+            answer = "Извините, произошла ошибка при обращении к Chatbase 😥"
 
-        # Ответ пользователю
+        # Ответ в Telegram
         requests.post(
             f"{TELEGRAM_API_URL}/sendMessage",
-            json={'chat_id': chat_id, 'text': answer}
+            json={"chat_id": chat_id, "text": answer}
         )
 
     return 'ok', 200
@@ -67,6 +59,5 @@ def webhook():
 def home():
     return 'Бот работает!'
 
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=8080)
