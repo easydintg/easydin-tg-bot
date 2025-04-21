@@ -4,13 +4,13 @@ import os
 
 app = Flask(__name__)
 
-# === Настройки ===
+# === Настройки (лучше через Render Secrets, но можно временно прямо здесь) ===
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHATBASE_API_KEY = os.environ.get("CHATBASE_API_KEY")
 CHATBASE_BOT_ID = os.environ.get("CHATBASE_BOT_ID")
-
 TELEGRAM_API_URL = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
 
+# === Webhook обработка ===
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
@@ -18,6 +18,8 @@ def webhook():
     if 'message' in data:
         chat_id = data['message']['chat']['id']
         user_text = data['message'].get('text', '')
+
+        print(f"📩 Пользователь написал: {user_text}")
 
         # Отправка в Chatbase
         chatbase_response = requests.post(
@@ -32,15 +34,15 @@ def webhook():
             }
         )
 
-        print("== Chatbase ответ ==")
-        print(chatbase_response.status_code)
-        print(chatbase_response.text)
+        print("📡 Ответ от Chatbase:")
+        print(f"📦 Статус: {chatbase_response.status_code}")
+        print(f"📤 Тело: {chatbase_response.text}")
 
         if chatbase_response.ok:
             try:
                 answer = chatbase_response.json()['messages'][0]['content']
             except Exception as e:
-                print("Ошибка парсинга ответа:", e)
+                print("❌ Ошибка при разборе JSON:", e)
                 answer = 'Не удалось разобрать ответ 🤔'
         else:
             answer = 'Извините, что-то пошло не так 😥'
@@ -55,7 +57,7 @@ def webhook():
 
 @app.route('/')
 def home():
-    return 'Бот работает!'
+    return '✅ Бот работает!'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
