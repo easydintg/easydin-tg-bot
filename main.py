@@ -27,12 +27,15 @@ def webhook():
                 "Authorization": f"Bearer {CHATBASE_API_KEY}",
                 "Content-Type": "application/json"
             },
-            json={
-                "messages": [{"content": user_text, "role": "user"}],
-                "chatbot_id": CHATBASE_BOT_ID
-            }
-        )
+                    json={
+            "messages": [{"content": user_text, "role": "user"}],
+            "chatbot_id": CHATBASE_BOT_ID
+        }
+    )
 
+    print(">>> Chatbase status:", chatbase_response.status_code)
+    print(">>> Chatbase raw response:", chatbase_response.text)
+    
         print("== Chatbase ответ ==")
         print(chatbase_response.status_code)
         print(chatbase_response.text)
