@@ -1,15 +1,21 @@
 from flask import Flask, request
 import requests
 import os
+import datetime
 
 app = Flask(__name__)
 
-# Получаем переменные окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHATBASE_API_KEY = os.getenv("CHATBASE_API_KEY")
 CHATBASE_BOT_ID = os.getenv("CHATBASE_BOT_ID")
 
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+
+LOG_FILE = "log.txt"
+
+def log(message):
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{datetime.datetime.now()} | {message}\n")
 
 @app.route('/')
 def home():
@@ -23,7 +29,6 @@ def webhook():
         chat_id = data['message']['chat']['id']
         user_text = data['message'].get('text', '')
 
-        # Отправка запроса в Chatbase
         chatbase_response = requests.post(
             "https://www.chatbase.co/api/v1/chat",
             headers={
@@ -32,31 +37,28 @@ def webhook():
             },
             json={
                 "messages": [{"content": user_text, "role": "user"}],
-                "chatbotId": CHATBASE_BOT_ID  # ✅ Важно: именно chatbotId с большой I
+                "chatbotId": CHATBASE_BOT_ID
             }
         )
 
-        # Логирование полного ответа
-        print(">>> Статус ответа Chatbase:", chatbase_response.status_code)
-        print(">>> Текст ответа Chatbase:", chatbase_response.text)
+        log(f"Chatbase status: {chatbase_response.status_code}")
+        log(f"Chatbase text: {chatbase_response.text}")
 
-        # Обработка ответа
         if chatbase_response.ok:
             try:
                 data = chatbase_response.json()
                 if "messages" in data and data["messages"]:
                     answer = data["messages"][0]["content"]
                 else:
-                    print(">>> Ответ от Chatbase не содержит messages:", data)
+                    log(f"❗ No 'messages' field in response: {data}")
                     answer = "Извините, не удалось получить ответ от Chatbase 😕"
             except Exception as e:
-                print("Ошибка парсинга JSON:", e)
+                log(f"❌ JSON parsing error: {str(e)}")
                 answer = "Ошибка обработки ответа 🤔"
         else:
-            print(">>> Ошибка Chatbase:", chatbase_response.status_code, chatbase_response.text)
+            log(f"❌ Chatbase error response: {chatbase_response.status_code} | {chatbase_response.text}")
             answer = "Произошла ошибка при обращении к Chatbase."
 
-        # Отправка ответа в Telegram
         requests.post(
             f'{TELEGRAM_API_URL}/sendMessage',
             json={'chat_id': chat_id, 'text': answer}
