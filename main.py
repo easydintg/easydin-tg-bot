@@ -30,18 +30,19 @@ def webhook():
             }
         )
 
-     if chatbase_response.ok:
-    answer = chatbase_response.json()['messages'][0]['content']
-else:
-    print("Ответ от Chatbase с ошибкой:")
-    print(chatbase_response.status_code)
-    print(chatbase_response.text)
-    answer = 'Извините, что-то пошло не так 😥'
+        if chatbase_response.ok:
+            answer = chatbase_response.json()['messages'][0]['content']
+        else:
+            print("Ответ от Chatbase с ошибкой:")
+            print(chatbase_response.status_code)
+            print(chatbase_response.text)
+            answer = 'Извините, что-то пошло не так 😥'
 
         requests.post(
             f'{TELEGRAM_API_URL}/sendMessage',
             json={'chat_id': chat_id, 'text': answer}
         )
+
     return 'ok', 200
 
 @app.route('/')
