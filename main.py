@@ -36,7 +36,7 @@ def webhook():
     print(">>> Chatbase status:", chatbase_response.status_code)
     print(">>> Chatbase raw response:", chatbase_response.text)
     
-        print("== Chatbase ответ ==")
+    print("== Chatbase ответ ==")
         print(chatbase_response.status_code)
         print(chatbase_response.text)
 
